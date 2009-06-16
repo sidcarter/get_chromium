@@ -1,0 +1,58 @@
+#!/usr/bin/env ruby
+require 'net/http'
+require 'rubygems'
+require 'plist'
+
+tmp_dir="/tmp/"
+
+build_site="build.chromium.org"
+folder="/buildbot/snapshots/chromium-rel-mac/"
+
+pkg_file="chrome-mac.zip"
+pkg_dir="chrome-mac/"
+pkg_name="Chromium.app"
+plist_file="/Contents/Info.plist"
+latest_version=nil
+version_file="LATEST"
+
+app_dir="/Volumes/Marge/Applications/"
+
+current=Plist::parse_xml(app_dir+pkg_name+plist_file)
+current_version=current['SVNRevision'] if current
+
+def download_chrome(site,source,destination)
+	Net::HTTP.start(site,80) do |web|
+		download=web.get(source)
+		open(destination,"wb") do |file|
+			file.write(download.body)
+		end
+	end
+end
+  
+Net::HTTP.start(build_site,80) do |web|
+	latest_version=web.get(folder+version_file).body
+end
+
+file_path=folder+latest_version+"/"+pkg_file
+
+if current.nil?
+  print "Chromium is not installed.\n"
+elsif latest_version > current_version
+	print "New Version of Chromium Available.\n" 
+elsif latest_version == current_version
+	print "Latest Version of Chromium already installed.\n"
+	exit
+end
+
+print "Would you like to download the latest version of Chromium (y/n) ? "
+response = gets.chomp
+
+if response == 'y'
+  if current_version
+    FileUtils.remove_entry_secure(app_dir+pkg_name,:force=>true)
+  	print "Old Version of Chromium Deleted.\n"
+  end
+  download_chrome(build_site,file_path,tmp_dir+pkg_file)
+  system("unzip","-qq",tmp_dir+pkg_file,"-d", tmp_dir)
+  FileUtils.mv(tmp_dir+pkg_dir+pkg_name, app_dir, :force => false)
+end
