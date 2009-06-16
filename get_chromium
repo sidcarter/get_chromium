@@ -1,4 +1,14 @@
 #!/usr/bin/env ruby
+/*
+ * get_chromium
+ *
+ * Copyright (c) 2009 Khader V Syed
+ * licensed under the BSD license.
+ * 
+ *
+ * Date: 2009-06-16 10:43:31 +1200 (Tue, 16 Jun 2009)
+ */
+
 require 'net/http'
 require 'rubygems'
 require 'plist'
@@ -15,6 +25,7 @@ plist_file="/Contents/Info.plist"
 latest_version=nil
 version_file="LATEST"
 
+# Ideally you would only need to change the one variable below for your specific environment
 app_dir="/Volumes/Marge/Applications/"
 
 current=Plist::parse_xml(app_dir+pkg_name+plist_file)
