@@ -1,0 +1,13 @@
+README
+======
+
+get_chromium - a simple script that checks for the latest version of Chromium and installs it.
+
+Change the app_dir variable according to your installation directory.
+
+Dependencies
+============
+
+You will need the plist gem and the unzip binary installed for this to work.
+
+This script should work fine on Mac OS X and with little changes on any other Unix operating system.
