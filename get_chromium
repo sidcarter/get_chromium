@@ -17,8 +17,9 @@ require 'plist'
 
 tmp_dir="/tmp/"
 
-build_site="build.chromium.org"
-folder="/buildbot/snapshots/chromium-rel-mac/"
+# Settings that shouldn't change in the future, but could :D
+remote_site="build.chromium.org"
+remote_folder="/buildbot/snapshots/chromium-rel-mac/"
 
 pkg_file="chrome-mac.zip"
 pkg_dir="chrome-mac/"
@@ -27,7 +28,6 @@ plist_file="/Contents/Info.plist"
 latest_version=nil
 version_file="LATEST"
 
-#
 # Ideally you would only need to change the one variable below for your specific environment
 # There should be a trailing slash
 # For e.g. app_dir="/Applications/"
@@ -36,21 +36,25 @@ app_dir="/Volumes/Marge/Applications/"
 current=Plist::parse_xml(app_dir+pkg_name+plist_file)
 current_version=current['SVNRevision'] if current
 
-def download_chrome(site,source,destination)
-  print "Downloading Chromium... please wait\n"
-	Net::HTTP.start(site,80) do |web|
-		download=web.get(source)
+# Subroutine to download chromium
+def download_chromium(site,source,destination)
+  
+  print "Downloading Chromium... please wait...\n"
+	Net::HTTP.start(site,80) do |remote|
+		download=remote.get(source)
 		open(destination,"wb") do |file|
 			file.write(download.body)
 		end
 	end
-end
-  
-Net::HTTP.start(build_site,80) do |web|
-	latest_version=web.get(folder+version_file).body
+	
 end
 
-file_path=folder+latest_version+"/"+pkg_file
+# Let's get the latest version number to begin with  
+Net::HTTP.start(remote_site,80) do |remote|
+	latest_version=remote.get(remote_folder+version_file).body
+end
+
+remote_file_path=remote_folder+latest_version+"/"+pkg_file
 
 if current.nil?
   print "Chromium is not installed.\n"
@@ -67,20 +71,24 @@ response = gets.chomp
 if response == 'y'
   if current_version
     begin
-      print "Deleting old versions in #{app_dir}...\n"
+      print "Deleting old version in #{app_dir}...\n"
       FileUtils.remove_entry_secure(app_dir+pkg_name,:force=>true, :verbose => true)
     rescue ArgumentError
-      print "Oops! Encountered a problem deleting the older version. Check if parent directory is world writable\n" 
+      print "Oops! Encountered a problem deleting the older version. Check permissions on #{app_dir}.\n" 
     end
     print "Old Version of Chromium Deleted.\n"
   end
+  
   print "Deleting old versions in #{tmp_dir}...\n"
   FileUtils.remove_entry_secure(tmp_dir+pkg_file,:force=>true, :verbose => true)
   FileUtils.remove_entry_secure(tmp_dir+pkg_dir,:force=>true, :verbose => true)
   FileUtils.remove_entry_secure(tmp_dir+pkg_dir+pkg_name,:force=>true, :verbose => true)
-  download_chrome(build_site,file_path,tmp_dir+pkg_file)
+  download_chromium(remote_site,remote_file_path,tmp_dir+pkg_file)
+  
   print "Unzipping new version...\n"
+  # The following line is the unclean part of this script. Extracting using rubyzip appears to have some problems
   system("unzip","-qq",tmp_dir+pkg_file,"-d", tmp_dir)
+  
   print "Installing new version...\n"
   FileUtils.mv(tmp_dir+pkg_dir+pkg_name, app_dir, :force => false, :verbose => true)
   print "New version is ready to be used.\n"
