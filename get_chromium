@@ -69,6 +69,17 @@ print "Would you like to download the latest version of Chromium (y/n) ? "
 response = gets.chomp
 
 if response == 'y'
+  
+  print "Deleting any old versions in #{tmp_dir}...\n"
+  FileUtils.remove_entry_secure(tmp_dir+pkg_file,:force=>true, :verbose => true)
+  FileUtils.remove_entry_secure(tmp_dir+pkg_dir,:force=>true, :verbose => true)
+  FileUtils.remove_entry_secure(tmp_dir+pkg_dir+pkg_name,:force=>true, :verbose => true)
+  download_chromium(remote_site,remote_file_path,tmp_dir+pkg_file)
+  
+  print "Unzipping new version...\n"
+  # The following line is the unclean part of this script. Extracting using rubyzip appears to have some problems
+  system("unzip","-qq",tmp_dir+pkg_file,"-d", tmp_dir)
+  
   if current_version
     begin
       print "Deleting old version in #{app_dir}...\n"
@@ -79,17 +90,7 @@ if response == 'y'
     print "Old Version of Chromium Deleted.\n"
   end
   
-  print "Deleting old versions in #{tmp_dir}...\n"
-  FileUtils.remove_entry_secure(tmp_dir+pkg_file,:force=>true, :verbose => true)
-  FileUtils.remove_entry_secure(tmp_dir+pkg_dir,:force=>true, :verbose => true)
-  FileUtils.remove_entry_secure(tmp_dir+pkg_dir+pkg_name,:force=>true, :verbose => true)
-  download_chromium(remote_site,remote_file_path,tmp_dir+pkg_file)
-  
-  print "Unzipping new version...\n"
-  # The following line is the unclean part of this script. Extracting using rubyzip appears to have some problems
-  system("unzip","-qq",tmp_dir+pkg_file,"-d", tmp_dir)
-  
   print "Installing new version...\n"
   FileUtils.mv(tmp_dir+pkg_dir+pkg_name, app_dir, :force => false, :verbose => true)
-  print "New version is ready to be used.\n"
+  print "Latest version of Chromium installed.\n"
 end
